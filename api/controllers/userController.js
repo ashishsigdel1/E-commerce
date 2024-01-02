@@ -3,6 +3,8 @@ import User from "../models/userModel.js";
 import bcryptjs from "bcryptjs";
 import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
+import { sendEmail } from "./emailController.js";
+import crypto from "crypto";
 
 export const test = async (req, res) => {
   res.json("hello world");
@@ -168,6 +170,57 @@ export const logOut = (req, res, next) => {
   try {
     res.clearCookie("access_token");
     res.status(201).json("User logged out!");
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const forgotPasswordToken = async (req, res, next) => {
+  const { email } = req.body;
+  const user = await User.findOne({ email });
+  if (!user) return next(errorHandler(404, "User not found!"));
+
+  try {
+    const token = await user.generatePasswordResetToken();
+    await user.save();
+
+    const resetURL = `Hi, Please follow this link to reset your password. This link is valid only for 10 minutes. <a href="http://localhost:5000/api/user/reset-password/${token}">Click here</a>`;
+
+    const data = {
+      to: email,
+      text: "Hey User",
+      subject: "Forgot Password Link",
+      htm: resetURL,
+    };
+
+    await sendEmail(data);
+
+    res.json(token);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const resetPassword = async (req, res, next) => {
+  try {
+    const { password } = req.body;
+    const hashedPassword = bcryptjs.hashSync(password, 10);
+    const { token } = req.params;
+    const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+
+    const user = await User.findOne({
+      passwordResetToken: hashedToken,
+      passwordResetExpires: { $gt: Date.now() },
+    });
+    if (!user) {
+      return next(errorHandler(401, "Token expired, Please try again later!"));
+    }
+
+    user.password = hashedPassword;
+    user.passwordResetToken = undefined;
+    user.passwordResetExpires = undefined;
+    await user.save();
+    res.json(user);
   } catch (error) {
     next(error);
   }

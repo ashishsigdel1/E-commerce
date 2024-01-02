@@ -3,10 +3,12 @@ import {
   blockUser,
   createUser,
   deleteUser,
+  forgotPasswordToken,
   getAllUser,
   getUser,
   logOut,
   loginUser,
+  resetPassword,
   test,
   unblockUser,
   updateUser,
@@ -18,6 +20,8 @@ const router = express.Router();
 router.get("/test", test);
 router.post("/register", createUser);
 router.post("/login", loginUser);
+router.post("/forgot-password-token", forgotPasswordToken);
+router.post("/reset-password/:token", resetPassword);
 router.post("/update/:id", verifyToken, updateUser);
 router.get("/logout", logOut);
 router.get("/all-users", getAllUser);
