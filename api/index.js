@@ -4,6 +4,7 @@ import { connectToDB } from "./config/dbConnect.js";
 import cookieParser from "cookie-parser";
 import userRouter from "./routes/authRoute.js";
 import productRouter from "./routes/productRoute.js";
+import blogRouter from "./routes/blogRoute.js";
 
 import morgan from "morgan";
 
@@ -19,6 +20,7 @@ app.use(morgan());
 
 app.use("/api/user", userRouter);
 app.use("/api/product", productRouter);
+app.use("/api/blog", blogRouter);
 
 app.listen(PORT, () => {
   console.log(`Server is running at port ${PORT}!!!`);
