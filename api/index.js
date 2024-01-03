@@ -7,6 +7,7 @@ import productRouter from "./routes/productRoute.js";
 import blogRouter from "./routes/blogRoute.js";
 import productCategoryRouter from "./routes/prodCategoryRoute.js";
 import blogCategoryRouter from "./routes/blogCategoryRoute.js";
+import brandRouter from "./routes/brandRoute.js";
 
 import morgan from "morgan";
 
@@ -25,6 +26,7 @@ app.use("/api/product", productRouter);
 app.use("/api/blog", blogRouter);
 app.use("/api/pcategory", productCategoryRouter);
 app.use("/api/bcategory", blogCategoryRouter);
+app.use("/api/brand", brandRouter);
 
 app.listen(PORT, () => {
   console.log(`Server is running at port ${PORT}!!!`);
