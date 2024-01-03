@@ -1,4 +1,5 @@
 import Product from "../models/productModel.js";
+import User from "../models/userModel.js";
 import slugify from "slugify";
 import { errorHandler } from "../utils/error.js";
 
@@ -16,7 +17,7 @@ export const createProduct = async (req, res, next) => {
 
 export const updateProduct = async (req, res, next) => {
   const id = req.params.id;
-  console.log(id);
+
   try {
     if (req.body.title) {
       req.body.slug = slugify(req.body.title);
@@ -42,8 +43,12 @@ export const deleteProduct = async (req, res, next) => {
 
 export const getProduct = async (req, res, next) => {
   const { id } = req.params;
+  const findProduct = await Product.findById(id);
+  if (!findProduct) {
+    return next(errorHandler(404, "Product not found!"));
+  }
+
   try {
-    const findProduct = await Product.findById(id);
     res.json(findProduct);
   } catch (error) {
     next(error);
@@ -92,6 +97,102 @@ export const getAllProduct = async (req, res, next) => {
 
     const product = await query;
     res.json(product);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const addToWishlist = async (req, res, next) => {
+  const { id } = req.user;
+  const { prodId } = req.body;
+  try {
+    const user = await User.findById(id);
+    const alreadyadded = user.wishlist.find((id) => id.toString() === prodId);
+
+    if (alreadyadded) {
+      let user = await User.findByIdAndUpdate(
+        id,
+        {
+          $pull: {
+            wishlist: prodId,
+          },
+        },
+        {
+          new: true,
+        }
+      );
+      res.json(user);
+    } else {
+      let user = await User.findByIdAndUpdate(
+        id,
+        {
+          $push: { wishlist: prodId },
+        },
+        {
+          new: true,
+        }
+      );
+      res.json(user);
+    }
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const rating = async (req, res, next) => {
+  const { id } = req.user;
+  const { star, prodId, comment } = req.body;
+
+  try {
+    const product = await Product.findById(prodId);
+    let alreadyRated = product.ratings.find(
+      (userId) => userId.postedby.toString() === id.toString()
+    );
+
+    if (alreadyRated) {
+      const updateRating = await Product.updateOne(
+        {
+          ratings: { $elemMatch: alreadyRated },
+        },
+        {
+          $set: { "ratings.$.star": star, "ratings.$.comment": comment },
+        },
+        { new: true }
+      );
+    } else {
+      const rateProduct = await Product.findByIdAndUpdate(
+        prodId,
+        {
+          $push: {
+            ratings: {
+              star: star,
+              comment: comment,
+              postedby: id,
+            },
+          },
+        },
+        {
+          new: true,
+        }
+      );
+      res.json(rateProduct);
+    }
+
+    const getAllRatings = await Product.findById(prodId);
+    let totalRatings = getAllRatings.ratings.length;
+    let ratingSum = getAllRatings.ratings
+      .map((item) => item.star)
+      .reduce((prev, curr) => prev + curr, 0);
+
+    let actualRating = Math.round(ratingSum / totalRatings);
+    const updatedProduct = await Product.findByIdAndUpdate(
+      prodId,
+      {
+        totalrating: actualRating,
+      },
+      { new: true }
+    );
+    res.json(updatedProduct);
   } catch (error) {
     next(error);
   }
