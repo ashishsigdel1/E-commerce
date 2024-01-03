@@ -16,6 +16,8 @@ export const createBlog = async (req, res, next) => {
 export const updateBlog = async (req, res, next) => {
   const { id } = req.params;
   try {
+    const checkId = await Blog.findById(id);
+    if (!checkId) return next(errorHandler(404, "Blog not found!"));
     const updateBlog = await Blog.findByIdAndUpdate(id, req.body, {
       new: true,
     });
@@ -30,6 +32,8 @@ export const updateBlog = async (req, res, next) => {
 export const getBlog = async (req, res, next) => {
   const { id } = req.params;
   try {
+    const checkId = await Blog.findById(id);
+    if (!checkId) return next(errorHandler(404, "Blog not found!"));
     const getBlog = await Blog.findById(id)
       .populate("likes")
       .populate("dislikes")
@@ -59,6 +63,8 @@ export const getAllBlog = async (req, res, next) => {
 export const deleteBlog = async (req, res, next) => {
   const { id } = req.params;
   try {
+    const checkId = await Blog.findById(id);
+    if (!checkId) return next(errorHandler(404, "Blog not found!"));
     const deleteBlog = await Blog.findByIdAndDelete(id);
     res.json({
       deleteBlog,
