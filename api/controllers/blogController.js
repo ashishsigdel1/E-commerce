@@ -1,6 +1,8 @@
 import Blog from "../models/blogModel.js";
 import User from "../models/userModel.js";
 import { errorHandler } from "../utils/error.js";
+import { cloudinaryUploadImg } from "../utils/cloudinary.js";
+import fs from "fs/promises";
 
 export const createBlog = async (req, res, next) => {
   try {
@@ -162,5 +164,42 @@ export const dislikeBlog = async (req, res, next) => {
       { new: true }
     );
     res.json(blog);
+  }
+};
+
+export const uploadImages = async (req, res, next) => {
+  const { id } = req.params;
+  const findBlog = await Blog.findById(id);
+  if (!findBlog) {
+    return next(errorHandler(404, "Blog not found!"));
+  }
+
+  try {
+    const uploader = async (path) => await cloudinaryUploadImg(path);
+
+    const urls = [];
+    const files = req.files;
+
+    for (const file of files) {
+      const { path } = file;
+      const newPath = await uploader(path);
+      urls.push(newPath);
+
+      fs.unlink(path);
+    }
+
+    const updateBlog = await Blog.findByIdAndUpdate(
+      id,
+      {
+        image: urls.map((file) => {
+          return file.url;
+        }),
+      },
+      { new: true }
+    );
+
+    res.json(updateBlog);
+  } catch (error) {
+    next(error);
   }
 };

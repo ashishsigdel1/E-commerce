@@ -2,6 +2,8 @@ import Product from "../models/productModel.js";
 import User from "../models/userModel.js";
 import slugify from "slugify";
 import { errorHandler } from "../utils/error.js";
+import { cloudinaryUploadImg } from "../utils/cloudinary.js";
+import fs from "fs/promises";
 
 export const createProduct = async (req, res, next) => {
   if (req.body.title) {
@@ -193,6 +195,43 @@ export const rating = async (req, res, next) => {
       { new: true }
     );
     res.json(updatedProduct);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const uploadImages = async (req, res, next) => {
+  const { id } = req.params;
+  const findProduct = await Product.findById(id);
+  if (!findProduct) {
+    return next(errorHandler(404, "Product not found!"));
+  }
+
+  try {
+    const uploader = async (path) => await cloudinaryUploadImg(path);
+
+    const urls = [];
+    const files = req.files;
+
+    for (const file of files) {
+      const { path } = file;
+      const newPath = await uploader(path);
+      urls.push(newPath);
+
+      fs.unlink(path);
+    }
+
+    const updateProduct = await Product.findByIdAndUpdate(
+      id,
+      {
+        images: urls.map((file) => {
+          return file.url;
+        }),
+      },
+      { new: true }
+    );
+
+    res.json(updateProduct);
   } catch (error) {
     next(error);
   }

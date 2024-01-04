@@ -7,12 +7,22 @@ import {
   getProduct,
   rating,
   updateProduct,
+  uploadImages,
 } from "../controllers/productController.js";
 import { verifyToken, verifyAdmin } from "../utils/verifyUser.js";
+import { productImgResize, uploadPhoto } from "../utils/uploadImages.js";
 
 const router = express();
 
 router.post("/", verifyAdmin, verifyToken, createProduct);
+router.put(
+  "/upload/:id",
+  verifyToken,
+  verifyAdmin,
+  uploadPhoto.array("images", 10),
+  productImgResize,
+  uploadImages
+);
 router.get("/", getAllProduct);
 router.post("/wishlist", verifyToken, addToWishlist);
 router.post("/rating", verifyToken, rating);

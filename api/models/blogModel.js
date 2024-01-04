@@ -39,9 +39,10 @@ const blogSchema = new mongoose.Schema(
       },
     ],
     image: {
-      type: String,
-      default:
+      type: Array,
+      default: [
         "https://img.freepik.com/free-photo/toy-bricks-table-with-word-blog_144627-47465.jpg",
+      ],
     },
     author: {
       type: String,
