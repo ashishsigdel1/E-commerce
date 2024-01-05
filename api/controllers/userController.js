@@ -5,6 +5,12 @@ import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
 import { sendEmail } from "./emailController.js";
 import crypto from "crypto";
+import Cart from "../models/cartModel.js";
+import Product from "../models/productModel.js";
+import Coupon from "../models/couponModel.js";
+import Order from "../models/orderModel.js";
+
+import uniqid from "uniqid";
 
 export const test = async (req, res) => {
   res.json("hello world");
@@ -275,6 +281,173 @@ export const getWishlist = async (req, res, next) => {
   try {
     const findUser = await User.findById(id).populate("wishlist");
     res.json(findUser);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const userCart = async (req, res, next) => {
+  const { cart } = req.body;
+  const { id } = req.user;
+  const user = await User.findById(id);
+  if (!user) return next(errorHandler(404, "User not found!"));
+  try {
+    let products = [];
+    const alreadyCarted = await Cart.findOne({ orderBy: user.id });
+
+    if (alreadyCarted) {
+      alreadyCarted.remove();
+    }
+
+    for (let i = 0; i < cart.length; i++) {
+      let object = {};
+      object.product = cart[i].id;
+      object.count = cart[i].count;
+      object.color = cart[i].color;
+
+      let getPrice = await Product.findById(cart[i].id).select("price").exec();
+      object.price = getPrice.price;
+      products.push(object);
+    }
+    let cartTotal = 0;
+    for (let i = 0; i < products.length; i++) {
+      cartTotal = cartTotal + products[i].price * products[i].count;
+    }
+    console.log(products, cartTotal);
+    let newCart = await new Cart({
+      products,
+      cartTotal,
+      orderBy: user?.id,
+    }).save();
+    res.json(newCart);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getUserCart = async (req, res, next) => {
+  const { id } = req.user;
+  const findUser = await User.findById(id);
+  if (!findUser) return next(errorHandler(404, "User not found!"));
+
+  try {
+    const cart = await Cart.findOne({ orderBy: id }).populate(
+      "products.product"
+    );
+    res.json(cart);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const emptyCart = async (req, res, next) => {
+  const { id } = req.user;
+  try {
+    const user = await User.findById(id);
+    if (!user) return next(errorHandler(404, "User not found!"));
+
+    const cart = await Cart.findOneAndDelete({ orderBy: user.id });
+
+    res.json(cart);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const applyCoupon = async (req, res, next) => {
+  const { coupon } = req.body;
+  const { id } = req.user;
+  const validCoupon = await Coupon.findOne({ name: coupon });
+  if (!validCoupon) return next(errorHandler(404, "Coupon is not applicable."));
+
+  const user = await User.findOne({ id });
+  let { products, cartTotal } = await Cart.findOne({
+    orderBy: id,
+  }).populate("products.product");
+  let totalAfterDiscount =
+    cartTotal - ((cartTotal * validCoupon.discount) / 100).toFixed(2);
+  await Cart.findOneAndUpdate(
+    { orderBy: id },
+    { totalAfterDiscount },
+    { new: true }
+  );
+  res.json(totalAfterDiscount);
+};
+
+export const createOrder = async (req, res, next) => {
+  const { COD, couponApplied } = req.body;
+  const { id } = req.user;
+  try {
+    if (!COD) return new (errorHandler(400, "Create cash order failed!"))();
+
+    const user = await User.findById(id);
+    const userCart = await Cart.findOne({ orderBy: user.id });
+    let finalAmount = 0;
+    if (couponApplied && userCart.totalAfterDiscount) {
+      finalAmount = userCart.totalAfterDiscount;
+    } else {
+      finalAmount = userCart.cartTotal;
+    }
+
+    let newOrder = await new Order({
+      products: userCart.products,
+      paymentIntent: {
+        id: uniqid(),
+        method: "COD",
+        amount: finalAmount,
+        status: "Cash on Delevery",
+        created: Date.now(),
+        currency: "USD",
+      },
+      orderBy: user.id,
+      orderStatus: "Cash on Delevery",
+    }).save();
+
+    let update = userCart.products.map((item) => {
+      return {
+        updateOne: {
+          filter: { _id: item.product._id },
+          update: { $inc: { quantity: -item.count, sold: +item.count } },
+        },
+      };
+    });
+    const updated = await Product.bulkWrite(update, {});
+    res.json({ message: "success" });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getOrders = async (req, res, next) => {
+  const { id } = req.user;
+  try {
+    const userOrders = await Order.findOne({ orderBy: id })
+      .populate("products.product")
+      .exec();
+    res.json(userOrders);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateOrderStatus = async (req, res, next) => {
+  const { status } = req.body;
+  const { id } = req.params;
+  const checkOrder = await Order.findById(id);
+  if (!checkOrder) return next(errorHandler(404, "Order not found!"));
+
+  try {
+    const updateOrderStatus = await Order.findByIdAndUpdate(
+      id,
+      {
+        orderStatus: status,
+        paymentIntent: {
+          status: status,
+        },
+      },
+      { new: true }
+    );
+    res.json(updateOrderStatus);
   } catch (error) {
     next(error);
   }
