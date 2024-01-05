@@ -42,15 +42,43 @@ export const loginUser = async (req, res, next) => {
     const findUser = await User.findOne({ email });
     if (!findUser) return next(errorHandler(404, "User not found!"));
 
-    const validPassword = bcryptjs.compareSync(password, findUser.password);
-    if (!validPassword) return next(errorHandler(401, "Wrong Credentials!"));
+    if (findUser.role == "user") {
+      const validPassword = bcryptjs.compareSync(password, findUser.password);
+      if (!validPassword) return next(errorHandler(401, "Wrong Credentials!"));
 
-    const token = jwt.sign({ id: findUser._id }, process.env.JWT_SECRET);
-    const { password: pass, ...rest } = findUser._doc;
-    res
-      .cookie("access_token", token, { httpOnly: true })
-      .status(200)
-      .json(rest);
+      const token = jwt.sign({ id: findUser._id }, process.env.JWT_SECRET);
+      const { password: pass, ...rest } = findUser._doc;
+      res
+        .cookie("access_token", token, { httpOnly: true })
+        .status(200)
+        .json(rest);
+    } else {
+      return next(errorHandler(400, "Proceed to Admin login."));
+    }
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const loginAdmin = async (req, res, next) => {
+  const { email, password } = req.body;
+  try {
+    const findAdmin = await User.findOne({ email });
+    if (!findAdmin) return next(errorHandler(404, "User not found!"));
+
+    if (findAdmin.role == "admin") {
+      const validPassword = bcryptjs.compareSync(password, findAdmin.password);
+      if (!validPassword) return next(errorHandler(401, "Wrong Credentials!"));
+
+      const token = jwt.sign({ id: findAdmin._id }, process.env.JWT_SECRET);
+      const { password: pass, ...rest } = findAdmin._doc;
+      res
+        .cookie("access_token", token, { httpOnly: true })
+        .status(200)
+        .json(rest);
+    } else {
+      return next(errorHandler(401, "Unauthorized!"));
+    }
   } catch (error) {
     next(error);
   }
@@ -84,6 +112,22 @@ export const updateUser = async (req, res, next) => {
   } catch (error) {
     next(error);
   }
+};
+
+export const saveAddress = async (req, res, next) => {
+  const { id } = req.user;
+  const findUser = await User.findById(id);
+  if (!findUser) return next(errorHandler(404, "User not found!"));
+  const updateUser = await User.findByIdAndUpdate(
+    id,
+    {
+      $set: {
+        address: req.body.address,
+      },
+    },
+    { new: true }
+  );
+  res.json(updateUser);
 };
 
 export const getAllUser = async (req, res, next) => {
@@ -221,6 +265,16 @@ export const resetPassword = async (req, res, next) => {
     user.passwordResetExpires = undefined;
     await user.save();
     res.json(user);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getWishlist = async (req, res, next) => {
+  const { id } = req.user;
+  try {
+    const findUser = await User.findById(id).populate("wishlist");
+    res.json(findUser);
   } catch (error) {
     next(error);
   }
