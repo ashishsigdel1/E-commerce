@@ -2,7 +2,7 @@ import Product from "../models/productModel.js";
 import User from "../models/userModel.js";
 import slugify from "slugify";
 import { errorHandler } from "../utils/error.js";
-import { cloudinaryUploadImg } from "../utils/cloudinary.js";
+import { cloudinaryUploadImg, cloudinaryDeleteImg } from "../utils/cloudinary.js";
 import fs from "fs/promises";
 
 export const createProduct = async (req, res, next) => {
@@ -201,12 +201,7 @@ export const rating = async (req, res, next) => {
 };
 
 export const uploadImages = async (req, res, next) => {
-  const { id } = req.params;
-  const findProduct = await Product.findById(id);
-  if (!findProduct) {
-    return next(errorHandler(404, "Product not found!"));
-  }
-
+  
   try {
     const uploader = async (path) => await cloudinaryUploadImg(path);
 
@@ -221,17 +216,25 @@ export const uploadImages = async (req, res, next) => {
       fs.unlink(path);
     }
 
-    const updateProduct = await Product.findByIdAndUpdate(
-      id,
-      {
-        images: urls.map((file) => {
-          return file.url;
-        }),
-      },
-      { new: true }
-    );
+    const images = urls.map((file) => {
+      return file;
+    });
 
-    res.json(updateProduct);
+    res.json(images);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const deleteImages = async (req, res, next) => {
+  const { id } = req.params;
+  
+  try {
+    const deleter = cloudinaryDeleteImg(id, "images");
+
+    res.json({
+      message: "Deleted."
+    });
   } catch (error) {
     next(error);
   }
