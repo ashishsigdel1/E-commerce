@@ -8,8 +8,6 @@ import blogRouter from "./routes/blogRoute.js";
 import productCategoryRouter from "./routes/prodCategoryRoute.js";
 import blogCategoryRouter from "./routes/blogCategoryRoute.js";
 import brandRouter from "./routes/brandRoute.js";
-import colorRouter from "./routes/colorRoute.js";
-import inquiryRouter from "./routes/inquiryRoute.js"
 import couponRouter from "./routes/couponRoute.js";
 
 import morgan from "morgan";
@@ -30,8 +28,6 @@ app.use("/api/blog", blogRouter);
 app.use("/api/pcategory", productCategoryRouter);
 app.use("/api/bcategory", blogCategoryRouter);
 app.use("/api/brand", brandRouter);
-app.use("/api/color", colorRouter);
-app.use("/api/inquiry", inquiryRouter);
 app.use("/api/coupon", couponRouter);
 
 app.listen(PORT, () => {
