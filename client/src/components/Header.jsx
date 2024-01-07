@@ -1,7 +1,7 @@
 import { NavLink, Link } from "react-router-dom";
 
 const Header = () => {
-  return <>Header</>;
+  return <div>Header</div>;
 };
 
 export default Header;
