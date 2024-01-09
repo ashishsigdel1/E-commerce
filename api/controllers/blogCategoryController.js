@@ -13,8 +13,8 @@ export const createCategory = async (req, res, next) => {
 export const updateCategory = async (req, res, next) => {
   const { id } = req.params;
   try {
-    const checkId = await blogCategory.findById(id);
-    if (!checkId) return next(errorHandler(404, "Category not found!"));
+    const checkID = await blogCategory.findById(id);
+    if (!checkID) return next(errorHandler(404, "Category not found!"));
 
     const updateCategory = await blogCategory.findByIdAndUpdate(id, req.body, {
       new: true,
@@ -28,8 +28,8 @@ export const updateCategory = async (req, res, next) => {
 export const deleteCategory = async (req, res, next) => {
   const { id } = req.params;
   try {
-    const checkId = await blogCategory.findById(id);
-    if (!checkId) return next(errorHandler(404, "Category not found!"));
+    const checkID = await blogCategory.findById(id);
+    if (!checkID) return next(errorHandler(404, "Category not found!"));
 
     const deleteCategory = await blogCategory.findByIdAndDelete(id);
     res.json(deleteCategory);
@@ -41,8 +41,8 @@ export const deleteCategory = async (req, res, next) => {
 export const getCategory = async (req, res, next) => {
   const { id } = req.params;
   try {
-    const checkId = await blogCategory.findById(id);
-    if (!checkId) return next(errorHandler(404, "Category not found!"));
+    const checkID = await blogCategory.findById(id);
+    if (!checkID) return next(errorHandler(404, "Category not found!"));
     const getCategory = await blogCategory.findById(id);
     res.json(getCategory);
   } catch (error) {
