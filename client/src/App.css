@@ -31,11 +31,17 @@ a {
 .gap-15 {
   gap: 15px;
 }
+.gap-30 {
+  gap: 30px;
+}
 /* headerpart */
 
 .header-top-strip {
   border-bottom: 1px solid var(--color-3b4149);
   background-color: var(--color-131921);
+}
+header .header-phone a {
+  color: var(--color-febd69);
 }
 .header-upper {
   border-bottom: 1px solid var(--color-3b4149);
@@ -72,4 +78,16 @@ a {
   padding: 20px;
   margin-bottom: 3px;
   border-bottom: 1px solid var(--color-3b4149);
+}
+/* footer  */
+footer {
+  background-color: var(--color-232f3e);
+}
+footer:not(:first-child) {
+  border-top: 1px solid var(--color-3b4149);
+}
+footer .input-group-text {
+  background-color: var(--color-232f3e);
+  color: white;
+  padding: 8px 17px;
 }
